@@ -30,12 +30,12 @@ class MovieFinder:
     def _run_embedding_check(self):
         """调用 embed/start.py 进行 embedding 检查"""
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        embed_dir = os.path.join(current_dir, "embed")
-        start_py = os.path.join(embed_dir, "start.py")
+        rag_dir = os.path.join(current_dir, "rag")
+        start_py = os.path.join(rag_dir, "start.py")
         
         if os.path.exists(start_py):
             print("正在检查向量数据库...")
-            sys.path.insert(0, embed_dir)
+            sys.path.insert(0, rag_dir)
             try:
                 import importlib.util
                 spec = importlib.util.spec_from_file_location("start", start_py)

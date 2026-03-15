@@ -12,7 +12,7 @@ def main():
     
     while True:
         try:
-            user_input = input("你: ").strip()
+            user_input = input(":").strip()
             if not user_input:
                 continue
 

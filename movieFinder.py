@@ -2,18 +2,13 @@
 
 import os
 import sys
-import json
-from typing import Dict, Any, List
+from typing import Dict, List
 
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
-from langchain_core.runnables import RunnablePassthrough
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from config import LLM_CONFIG, SYSTEM_PROMPT, SESSION_ID, RETRIEVAL_K
+from config import LLM_CONFIG, SYSTEM_PROMPT, RETRIEVAL_K
 from apis.douban_tool import search_douban_movies
 
 """工具注册中心"""
@@ -57,7 +52,7 @@ class MovieFinder:
     def _load_vector_store(self):
         """加载向量库"""
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        vector_store_path = os.path.join(current_dir, "embed", "vector_store")
+        vector_store_path = os.path.join(current_dir, "rag", "vector_store")
         model_path = os.path.join(current_dir, "bge-small-zh-v1.5")
         
         if not os.path.exists(vector_store_path):
