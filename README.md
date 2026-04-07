@@ -24,8 +24,8 @@ Agent 会自动选择合适的工具，调用电影数据库 API 或网页检索
 
 ```text
 MovieFinderAgent/
-├── agent_temp/         # 临时缓存、调试日志等
-├── apis/               # 各种外部 API wrapper（TMDB / 豆瓣 / OMDb 等）
+├── agent_temp/         # 记录agent开放中的一些过程性文件
+├── apis/               # agent调用的外部工具的函数
 ├── rag/                # RAG 相关实现（向量库、检索增强生成）
 ├── config.py           # 配置：LLM 模型、API Key、工具开关等
 ├── main.py             # 主入口，命令行交互或 API 服务
