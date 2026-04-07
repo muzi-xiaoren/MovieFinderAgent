@@ -61,7 +61,7 @@ def extract_movie_links(html_content: str, max_results: int = 5) -> List[str]:
 
 def extract_movie_detail(page, url: str) -> Dict:
     """访问详情页提取信息"""
-    print(f"  访问详情页: {url}")
+    # print(f"  访问详情页: {url}")
     
     try:
         page.goto(url, wait_until="networkidle", timeout=30000)
@@ -114,13 +114,13 @@ def search_douban_movies(movie_name: str) -> str:
         movie_name: 电影名称，如"肖申克的救赎"
     
     Returns:
-        返回前5个搜索结果的详细信息（info和简介）
+        返回前3搜索结果的详细信息（info和简介）
     """
     encoded_name = quote(movie_name)
     search_url = f"https://search.douban.com/movie/subject_search?search_text={encoded_name}&cat=1002"
     
-    print(f"正在搜索: {movie_name}")
-    print(f"URL: {search_url}")
+    # print(f"正在搜索: {movie_name}")
+    # print(f"URL: {search_url}")
     
     results = []
     
@@ -146,11 +146,11 @@ def search_douban_movies(movie_name: str) -> str:
             time.sleep(2)
             
             html_content = page.content()
-            movie_links = extract_movie_links(html_content, max_results=5)
+            movie_links = extract_movie_links(html_content, max_results=3)
             
-            print(f"找到 {len(movie_links)} 个电影:")
-            for i, link in enumerate(movie_links, 1):
-                print(f"  [{i}] {link}")
+            # print(f"找到 {len(movie_links)} 个电影:")
+            # for i, link in enumerate(movie_links, 1):
+            #     print(f"  [{i}] {link}")
             
             if not movie_links:
                 browser.close()

@@ -1,6 +1,6 @@
 """配置文件"""
 
-# LLM 配置
+# LLM 配置（主模型）
 LLM_CONFIG = {
     "openai_api_key": "",
     "openai_api_base": "https://ark.cn-beijing.volces.com/api/v3",
@@ -32,3 +32,9 @@ SESSION_ID = "movie_finder_user"
 
 # 向量检索配置
 RETRIEVAL_K = 1
+
+# Memory 配置
+MEMORY_CONFIG = {
+    "max_token_limit": 800,         # 总结最大 token 限制，可调整
+    "return_messages": False,       # 返回字符串总结，更易拼接
+}

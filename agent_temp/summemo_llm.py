@@ -1,9 +1,3 @@
-# ConversationBufferMemory  解释和示例代码用法如下
-# ConversationBufferMemory 是最简单的记忆系统，它会将所有的对话历史都存储在内存中。
-# 示例代码如下：
-# from langchain_classic.memory import ConversationBufferMemory
-# memory = ConversationBufferMemory()
-
 # ConversationBufferWindowMemory解释和示例代码用法如下
 # ConversationBufferWindowMemory 是一个滑动窗口记忆系统，它会记住最近的 N 条对话记录。
 # 示例代码如下：

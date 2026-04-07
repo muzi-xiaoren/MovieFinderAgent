@@ -20,12 +20,9 @@ def main():
                 print("\n再见！")
                 break
 
-            # Agent 处理
-            response = finder.chat(user_input)
-            
-            print("\nAI: ", end="", flush=True)
-            print(response)
-            print("-" * 60)
+            # 只调用 chat，让 chat 内部负责流式输出
+            finder.chat(user_input)
+            print("-" * 60)   # 分隔线放在这里
 
         except KeyboardInterrupt:
             print("\n\n已退出")
