@@ -193,7 +193,8 @@ class MovieFinder:
         except Exception as e:
             logger.error(f"后台总结出错: {e}")
     
-    def chat(self, user_input: str) -> str:
+    def chat(self, user_input: str):
+        """同时支持 CMD 和 Streamlit 的流式输出 + 等待提示"""
         self.turn_counter += 1
         logger.info(f"{'='*60}")
         logger.info(f"【第 {self.turn_counter} 轮对话】 用户输入: {user_input}")
@@ -204,17 +205,13 @@ class MovieFinder:
         messages = [
             ("system", f"{SYSTEM_PROMPT}\n\n本地向量库资料:\n{local_context}\n\n历史对话总结：\n{summary}"),
         ]
-        for msg in self.history[-8:]:      # 增加到最近8轮，提高记忆
+        for msg in self.history[-8:]:
             messages.append(msg)
         messages.append(("human", user_input))
 
         logger.info(f"发送给 LLM 的 Messages: {len(messages)} 条")
 
-        # ==================== 流式输出核心 ====================
-        print("\nAI: ", end="", flush=True)
-        final_answer = ""
-
-        # 先用 invoke 处理可能的工具调用（工具调用通常不需要流式）
+        # ==================== 处理工具调用 ====================
         response = self.llm.invoke(messages)
         tool_call_count = 0
 
@@ -230,37 +227,64 @@ class MovieFinder:
                     tool_call_id=tool_call.get("id", "")
                 ))
 
-            response = self.llm.invoke(messages)   # 继续直到没有工具调用
+            response = self.llm.invoke(messages)
 
-        # ==================== 最终回答真正流式输出 ====================
-        # 强制走 stream，确保逐 token 输出
-        stream_generator = self.llm.stream(messages)
+        logger.info("开始流式生成回答...")
 
-        for chunk in stream_generator:
-            if chunk.content:                     # 有些 chunk 可能为空
-                print(chunk.content, end="", flush=True)
-                final_answer += chunk.content
+        final_answer = ""
 
-        print()   # 流式结束后换行
+        def generate():
+            """生成器函数"""
+            nonlocal final_answer
+            stream_generator = self.llm.stream(messages)
 
-        logger.info(f"最终回答长度: {len(final_answer)} 字符")
-        logger.info(f"第 {self.turn_counter} 轮结束 {'='*60}")
+            for chunk in stream_generator:
+                if chunk.content:
+                    delta = chunk.content
+                    final_answer += delta
+                    yield delta
 
-        # 更新历史
+            # 结束后保存历史
+            self._save_to_history(user_input, final_answer)
+            logger.info(f"最终回答长度: {len(final_answer)} 字符")
+            logger.info(f"第 {self.turn_counter} 轮结束 {'='*60}")
+
+            if self.turn_counter % 2 == 0:
+                threading.Thread(
+                    target=self._background_summary,
+                    args=(user_input, final_answer),
+                    daemon=True,
+                    name=f"Summary-Thread-{self.turn_counter}"
+                ).start()
+
+        # ====================== 根据环境输出 ======================
+        try:
+            import streamlit as st
+            is_streamlit = hasattr(st, 'runtime') and st.runtime.exists()
+        except:
+            is_streamlit = False
+
+        if is_streamlit:
+            # Streamlit 前端：直接返回 generator（由 st.write_stream 处理）
+            return generate()
+        else:
+            # CMD 命令行：强制打印 + 添加等待提示
+            print("\nAI: 正在思考并生成回答", end="", flush=True)
+            for i in range(3):  # 模拟等待动画
+                print(".", end="", flush=True)
+                import time
+                time.sleep(0.15)
+            print("\n", end="", flush=True)   # 换行
+
+            # 真正的流式输出
+            for chunk in generate():
+                print(chunk, end="", flush=True)
+            
+            print()  # 最终换行
+            return final_answer
+
+    def _save_to_history(self, user_input: str, final_answer: str):
         self.history.append(("human", user_input))
         self.history.append(("ai", final_answer))
         if len(self.history) > 8:
             self.history = self.history[-8:]
-
-        # 后台总结（保留）
-        if self.turn_counter % 2 == 0:
-            thread = threading.Thread(
-                target=self._background_summary,
-                args=(user_input, final_answer),
-                daemon=True,
-                name=f"Summary-Thread-{self.turn_counter}"
-            )
-            thread.start()
-            logger.info(f"[{thread.name}] 后台总结线程已启动")
-
-        return final_answer
