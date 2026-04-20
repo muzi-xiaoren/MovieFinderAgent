@@ -1,3 +1,4 @@
+# streamlit run app.py
 import streamlit as st
 import sys
 from pathlib import Path
@@ -5,7 +6,7 @@ import random
 from movieFinder import MovieFinder
 import asyncio
 
-# Windows + Playwright + Streamlit 兼容性修复
+# Windows 兼容性修复
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
@@ -46,9 +47,9 @@ with st.sidebar:
     
     st.caption("当前后端：MovieFinder（chat 方法 + 流式输出）")
 
-# ====================== 初始化 Agent（只加载一次） ======================
+# ====================== 初始化 Agent ======================
 if "agent" not in st.session_state:
-    with st.spinner("正在初始化电影摸鱼王 Agent... 这可能需要几秒钟"):
+    with st.spinner("正在初始化电影摸鱼王 Agent..."):
         try:
             st.session_state.agent = MovieFinder()
             st.success("✅ Agent 初始化完成！")
@@ -56,6 +57,7 @@ if "agent" not in st.session_state:
             st.error(f"初始化失败: {e}")
             st.stop()
 
+# 初始化欢迎消息
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {
@@ -75,45 +77,64 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ====================== 用户输入 ======================
+# 防止 ghosting 的 hack
+st.empty()
+
+# ====================== 用户输入处理 ======================
 if prompt := st.chat_input("输入你的电影问题，例如：最近好看的悬疑片？"):
     
+    # 添加并显示用户消息
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
-    # 显示助手回复（带等待提示 + 流式输出）
+
+    # ==================== Assistant 回复（核心修复区域） ====================
     with st.chat_message("assistant"):
-        message_placeholder = st.empty()
+        # 先放一个 empty 减少 ghosting
+        st.empty()
         
-        # 先显示等待提示
-        with message_placeholder:
+        # 思考提示
+        thinking_placeholder = st.empty()
+        with thinking_placeholder:
             st.markdown("🍿 **电影摸鱼王正在翻豆瓣、检索 RAG 并思考中...**")
-            with st.spinner(""):
-                pass  # 只显示 spinner
+
         try:
-            # 调用 chat，获取 generator
+            # 调用 Agent 获取生成器
             response_generator = st.session_state.agent.chat(prompt)
-            # 使用真正的流式输出（打字机效果）
+            
+            # 只使用 write_stream，不再额外输出
             full_response = st.write_stream(response_generator)
+            
+            # 流式完成后清除思考提示
+            thinking_placeholder.empty()
+            
+            # 再次 empty 防止残留
+            st.empty()
+
         except Exception as e:
+            thinking_placeholder.empty()
             full_response = f"⚠️ 出错了：{str(e)}"
             st.error(full_response)
+            st.empty()
 
-    # 保存完整回答到历史
+    # 保存完整回答到历史（只保存一次）
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # ====================== 底部按钮 ======================
 col1, col2, col3 = st.columns(3)
+
 with col1:
     if st.button("🗑️ 清空对话"):
         st.session_state.messages = [
-            {"role": "assistant", "content": "对话已清空！有什么电影问题尽管问我～ 🍿"}
+            {"role": "assistant", 
+             "content": "对话已清空！有什么电影问题尽管问我～ 🍿"}
         ]
         st.rerun()
 
 with col2:
     if st.button("📤 导出对话"):
-        history_text = "\n\n".join([f"{m['role'].upper()}: {m['content']}" for m in st.session_state.messages])
+        history_text = "\n\n".join([f"{m['role'].upper()}: {m['content']}" 
+                                   for m in st.session_state.messages])
         st.download_button(
             label="下载聊天记录",
             data=history_text,
